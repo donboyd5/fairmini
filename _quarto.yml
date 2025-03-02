@@ -1,0 +1,20 @@
+project:
+  type: book
+
+book:
+  title: "fairmini"
+  author: "Don Boyd"
+  date: today
+  chapters:
+    - index.qmd
+    - intro.qmd
+    - equations.qmd
+
+format:
+  html:
+    theme:
+      - cosmo
+      - brand
+
+# editor: visual
+

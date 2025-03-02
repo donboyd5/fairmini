@@ -1,0 +1,49 @@
+# Equations
+
+## Model summary
+
+There are three consumption equations, three investment equations, a demand for imports equation, a price equation, the Fed’s interest rate rule, and a term structure equation explaining the mortgage rate. The equations are estimated by two-stage least squares (2SLS) with account taken, when necessary, of serial correlation of the residuals. The estimation period is 1954:1–2014:4 except for the Fed rule, where the period ends in 2008:3. (p.3)
+
+## Data notes
+
+FMFP.ZIP\sonyc\fm has:
+
+-   fmage.txt with AG1, AG2, AG3 – SMPL 1952.1 2027.4 ; – the age variables
+-   fmdata.txt – ALL of the other endogenous input variables
+-   fmexog.txt – exogenous values
+-   fminput.txt – has the FULL FairModel with 30 equations (US MODEL JANUARY 31, 2025 SPACE MAXVAR=500 MAXS=30 MAXCOEF=30 MAXFSR=60 FIRSTPER=1952.1 LASTPER=2027.4;)
+-   fmout.txt – output from estimation and solution of the model
+
+## Variables
+
+Nominal variables are denoted with a \$ at the end. The stock variables are summed from flows, where the base-quarter value is given in the table. The summation when relevant is both forward and backward. The variables constructed from peak-to-peak interpolations are on straight lines between the peaks. The capital gain or loss variable, CG\$, is constructed from Flowof Funds data. Likewise, the construction of PHOUSE, the price of housing relative to the GDP deflator, uses Flow of Funds data.
+
+![](images/clipboard-12052982.png)
+
+![](images/clipboard-846148252.png)
+
+![](images/clipboard-844145962.png)
+
+## Identities
+
+![](images/clipboard-4026653370.png)
+
+## Equation 1 – log of real per-capita consumption of services
+
+### Variables
+
+AA
+
+AG1, AG2, AG3
+
+C, C2
+
+CS
+
+POP
+
+RS
+
+YD
+
+![](images/clipboard-505718086.png)
