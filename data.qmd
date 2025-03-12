@@ -1,0 +1,44 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Get and save Fair model data
+
+
+```{r}
+#| label: notes
+
+# AG1 exog Percent of 16+ population 26-55 minus percent 16-25. BLS data. 1, 2, 3 -- working age minus college age
+# AG2 exog Percent of 16+ population 56-65 minus percent 16-25. BLS data. 1, 2, 3 -- early retirement minus college age
+# AG3 exog Percent of 16+ population 66+ minus percent 16-25. BLS data. 1, 2, 3   -- elderly minus college age
+
+```
+
+{{< include _setup.qmd >}}
+
+```{r}
+#| label: get-save-data
+#| eval: false
+#| output: false
+
+source(here::here("R", "functions_eviews.R"))
+
+fn <- "fmage.txt"
+fpath <- fs::path(DFMFP, fn)
+
+fmages <- get_eviews(fpath)
+
+fmages |> 
+  unnest(cols = data)
+
+fn <- "fmdata.txt"
+fpath <- fs::path(DFMFP, fn)
+fmdata <- get_eviews(fpath)
+
+fmobjects <- tibble::lst(fmages, fmdata)
+saveRDS(fmobjects, fs::path(DDATA, "fmobjects.rds"))
+
+```
+
