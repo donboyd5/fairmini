@@ -6,11 +6,13 @@ editor_options:
 
 # Equation 1
 
-{{< include _load_data.qmd >}}
+{{< include _setup.qmd >}}
 
+{{< include _load_data.qmd >}}
 
 ```{r}
 #| label: eq1
+#| output: false
 
 # C constant
 # C2 exog time varying constant term. 1, 2, 3, 4, 5, 6, 7, 8
@@ -58,18 +60,144 @@ eqd2 <- eqd1 |>
 eqd2 
 summary(eqd2)
 
+eqd3 <- eqd2 |> 
+  filter(date >= "1954-01-01",
+         date <= "2014-10-01")
+summary(eqd3)
+
 ```
 
+```{r}
+#| label: ar1-function
 
+ar1_correction <- function(data, formula, instruments, max_iter = 100, tol = 1e-5) {
+  # -------------------------------------------------------------------------
+  # data:       A data frame containing all variables (dependent var, regressors, instruments)
+  # formula:    An R formula for the structural equation, e.g., y ~ x1 + x2
+  # instruments: An R formula specifying instruments, e.g., ~ z1 + z2 + x3 (if x3 is exogenous)
+  # max_iter:   Maximum number of AR(1) iterations
+  # tol:        Convergence tolerance for the AR(1) coefficient (rho)
+  #
+  # Returns:    A list with:
+  #              - model: final ivreg model object
+  #              - rho:   estimated AR(1) coefficient
+  #              - iterations: how many iterations were done
+  # -------------------------------------------------------------------------
+  
+  # We'll need the 'AER' package for ivreg:
+  if (!requireNamespace("AER", quietly = TRUE)) {
+    stop("Package 'AER' needed for this function to work. Please install it.")
+  }
+  # For safety:
+  library(AER)
+  
+  # 1) Combine 'formula' and 'instruments' into a single formula for ivreg
+  #    ivreg requires something like:  y ~ x1 + x2 | z1 + z2 + ...
+  #    If formula = y ~ x1 + x2 and instruments = ~ z1 + z2 + x3,
+  #    then we build: y ~ x1 + x2 | z1 + z2 + x3
+  
+  iv_formula <- as.formula(
+    paste(
+      paste(deparse(formula), collapse = " "),
+      paste(deparse(instruments), collapse = " ")
+    )
+  )
+  
+  # 2) Initial 2SLS fit ignoring serial correlation
+  fit_iv <- ivreg(iv_formula, data = data)
+  
+  # Initialize old rho for iteration
+  rho_old <- 0
+  
+  # 3) Iterative procedure
+  for (i in seq_len(max_iter)) {
+    # Extract residuals from the current IV fit
+    resid_iv <- residuals(fit_iv)
+    
+    # Estimate AR(1) coefficient by regressing e_t on e_{t-1} (no intercept)
+    # We'll skip the first residual, so index them carefully:
+    fit_rho <- lm(resid_iv[-1] ~ 0 + resid_iv[-length(resid_iv)])
+    rho_new <- coef(fit_rho)[1]
+    
+    # Check convergence in rho
+    if (abs(rho_new - rho_old) < tol) {
+      break
+    }
+    
+    # 4) Cochrane–Orcutt transform all numeric columns (including instruments)
+    data_t <- data
+    numeric_cols <- sapply(data_t, is.numeric)
+    
+    # For each numeric column, transform y_t -> y_t - rho*y_{t-1}
+    for (col_name in names(data_t)[numeric_cols]) {
+      # Shift forward by 1 and subtract
+      data_t[[col_name]][-1] <- data_t[[col_name]][-1] - rho_new * data_t[[col_name]][-(nrow(data_t))]
+      # The first row is not transformable in standard CO; we'll drop it
+    }
+    
+    # Remove the first observation (standard Cochrane–Orcutt)
+    data_t <- data_t[-1, ]
+    
+    # 5) Re-fit 2SLS on the transformed data
+    fit_iv_new <- ivreg(iv_formula, data = data_t)
+    
+    # Update the objects for the next iteration
+    fit_iv <- fit_iv_new
+    rho_old <- rho_new
+  }
+  
+  # Return final model, final rho, and iteration count
+  list(
+    model = fit_iv,
+    rho = rho_old,
+    iterations = i
+  )
+}
+
+
+```
 
 ## Equation 1 – log of real per-capita consumption of services
 
+```{r}
+#| label: eq1-estimation
+#| output: true
+
+
+# Step 4: Apply AR(1) correction
+results <- ar1_correction(
+  data = eqd3,
+  formula = ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yda_pop + RS + ln_aa_pop_l1,
+  instruments = ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yda_pop + RS_l1 + ln_aa_pop_l1,
+  max_iter = 1000
+)
+
+# Step 5: Summarize the results
+results$fit <- results$model
+summary(results$fit)
+
+
+# Step 6: Diagnostic checks
+# Plot residuals over time
+plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "Time", ylab = "Residuals")
+
+# ACF of residuals
+acf(residuals(results$fit), main = "ACF of Residuals")
+
+# Estimated AR(1) coefficient (rho)
+cat("Estimated AR(1) coefficient (rho):", results$rho, "\n")
+
+# calc rho for comparison
+res <- residuals(results$fit)
+rho_calc <- cor(res[-length(res)], res[-1])  # Correlation between residuals and their lag
+rho_calc
+# 0.08437705
+
+```
 
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()
 ```
-
-
 
 ```{r}
 #| label: by-hand
@@ -190,7 +318,6 @@ glimpse(eqd3a)
 
 ```
 
-
 ```{r}
 #| label: system-fit
 
@@ -251,9 +378,7 @@ summary(fit)
 
 ```
 
-
 ## Recommended approach soup to nuts
-
 
 ```{r}
 #| label: setup2
@@ -275,7 +400,6 @@ dfair <- r"(E:\R_projects\projects\fairmini\data_raw\FMFP)"
 
 ```
 
-
 ```{r}
 #| label: get-data2
 
@@ -288,7 +412,6 @@ fn <- "fmdata.txt"; fpath <- fs::path(dfair, fn)
 fmdata <- get_eviews(fpath)
 
 ```
-
 
 ```{r}
 #| label: recommended
@@ -408,7 +531,6 @@ plot(residuals(fit_felm), type = "l", main = "Residuals Over Time", xlab = "Time
 
 
 ```
-
 
 ```{r}
 
@@ -767,8 +889,6 @@ rho_calc
 # 0.08437705
 
 ```
-
-
 
 ## Variables
 

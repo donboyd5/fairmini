@@ -1,5 +1,4 @@
-
-{{< include _setup.qmd >}}
+<!-- {{< include _setup.qmd >}} -->
 
 ```{r}
 #| echo: false
@@ -15,4 +14,3 @@ fmobjects <- readRDS(fs::path(DDATA, "fmobjects.rds"))
 list2env(fmobjects, envir = .GlobalEnv)
 
 ```
-
