@@ -1,0 +1,16 @@
+<!-- {{< include _setup.qmd >}} -->
+
+```{r}
+#| echo: false
+#| messages: false
+#| notes: false
+#| warnings: false
+
+# put the following shortcode on a standalone line in any qmd file that uses this code:
+# {{< include _load_data.qmd >}}
+
+
+fmobjects <- readRDS(fs::path(DDATA, "fmobjects.rds"))
+list2env(fmobjects, envir = .GlobalEnv)
+
+```

@@ -1,0 +1,33 @@
+```{r}
+#| echo: false
+#| messages: false
+#| notes: false
+#| warnings: false
+
+# put the following shortcode on a standalone line in any qmd file that uses this code:
+# {{< include _setup.qmd >}}
+
+libs <- function(){
+  library(tidyverse)
+  library(zoo)
+  library(AER) 
+  library(systemfit)
+  
+  library(here)
+  library(fs)
+}
+
+suppressPackageStartupMessages(libs())
+
+DR <- here::here("R")
+DRAW <- here::here("data_raw")
+DDATA <- here::here("data")
+DFMFP <- fs::path(DRAW, "FMFP")
+
+# DRAW <- r"(E:\R_projects\projects\fairmini\data_raw\FMFP)"
+# DDATA <- r"(E:\R_projects\projects\fairmini\data)"
+
+source(fs::path(DR, "functions.R"))
+
+
+```
