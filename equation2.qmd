@@ -4,7 +4,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Equation 1 – log of real per-capita consumer expenditures on services
+# Equation 2 – log of real per-capita consumer expenditures on nondurables
 
 {{< include _setup.qmd >}}
 
@@ -18,7 +18,7 @@ smpl <- list(start="1954-01-01", end="2014-10-01")
 # C constant
 # C2 exog time varying constant term. 1, 2, 3, 4, 5, 6, 7, 8
 # AA AG1, AG2, AG3 C, C2 CS POP RS YD
-vars <- c("AA", "C", "C2", "CS", "POP", "RS", "YD")
+vars <- c("AA", "C", "C2", "CN", "POP", "RS", "YD")
 
 # need C, C2
 # constant term is same up to 1969:4 (T1), then changes linearly up to some 1988:4 (T2) and unchanged through T
@@ -35,7 +35,7 @@ T2 <- "1988-10-01"
 data1 <- fmdata |> 
   filter(vname %in% vars) |> 
   bind_rows(fmages)
-count(data1, vname) # AA, CS, POP, RS, YD
+count(data1, vname) # AA, CN, POP, RS, YD
 
 data2 <- data1 |> 
   select(-c(start, end)) |> 
@@ -43,21 +43,24 @@ data2 <- data1 |>
   pivot_wider(names_from = vname) |> 
   arrange(date) |> 
   mutate(aa_pop = AA / POP,
-         cs_pop = CS / POP,
+         cn_pop = CN / POP,
          yda_pop = YD / POP,
-         ln_cs_pop = log(cs_pop),
-         ln_aa_pop_l1 = lag(log(aa_pop)),
-         ln_cs_pop_l1 = lag(ln_cs_pop),
-         ln_yda_pop = log(yda_pop),
+         ln_cn_pop = log(cn_pop),
+         ln_cn_pop_l1 = lag(ln_cn_pop), # rhs
+         ln_cn_pop_d1 = ln_cn_pop - lag(ln_cn_pop),
+         ln_cn_pop_d1l1 = lag(ln_cn_pop_d1), # rhs
+         
+         ln_aa_pop_l1 = lag(log(aa_pop)), # rhs
+         ln_yda_pop = log(yda_pop), # rhs
          idx = row_number(),
-         C = 1,
-         C2 = case_when(
+         C = 1, # rhs
+         C2 = case_when( # rhs
            date < T1 ~ 0,
            date < T2 ~ idx - idx[date == T1],
            date >= T2 ~ idx[date == T2] - idx[date == T1],
            .default = NA_real_)) |> 
   # get additional lagged values possibly needed for instrumental variables
-  mutate(ln_cs_pop_l2  = lag(ln_cs_pop, 2),
+  mutate(ln_cn_pop_l2  = lag(ln_cn_pop, 2),
          RS_l1         = lag(RS)) |> 
   na.omit() |>  # drop any row that has an NA in any variable
   filter(date >= smpl$start,
@@ -72,8 +75,10 @@ summary(data2)
 #| label: eq-estimation
 #| output: true
 
-formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yda_pop + RS + ln_aa_pop_l1
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
+formula <- ln_cn_pop ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yda_pop + RS
+instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l2 + ln_cn_pop_d1l1 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
+
+# djb ask chatgpt for help determining what to use as instruments
 
 # Apply AR(1) correction with damping
 results <- ar1_correction(
@@ -92,7 +97,7 @@ summary(results$fit)  # Final 2SLS model
 
 ## Fair's results for the equation
 
-![](images/clipboard-3503997208.png)
+![](images/clipboard-359238901.png)
 
 ## Details and diagnostics
 

@@ -6,7 +6,7 @@ rho <- function(residuals){
 
 iv_formula_combine <- function(formula, instruments){
   as.formula(paste(
-    deparse(formula[[2]]), "~", deparse(formula[[3]]), "|", deparse(instruments[[2]])
+    deparse(formula[[2]]), "~", deparse(formula[[3]], width.cutoff = 500), "|", deparse(instruments[[2]], width.cutoff = 500)
   ))
 }
 
@@ -21,7 +21,7 @@ ar1_correction <- function(data, formula, instruments, max_iter = 100, tol = 1e-
   
   # Combine formula and instruments into a single formula for ivreg
   iv_formula <- as.formula(paste(
-    deparse(formula[[2]]), "~", deparse(formula[[3]]), "|", deparse(instruments[[2]])
+    deparse(formula[[2]]), "~", deparse(formula[[3]], width.cutoff = 500), "|", deparse(instruments[[2]], width.cutoff = 500)
   ))
   
   # Initial 2SLS fit ignoring serial correlation
