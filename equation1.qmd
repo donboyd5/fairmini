@@ -4,7 +4,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Equation 1
+# Equation 1 – log of real per-capita consumption of services
 
 {{< include _setup.qmd >}}
 
@@ -30,6 +30,7 @@ T2 <- "1988-10-01"
 
 ```{r}
 #| label: eq1
+#| output: false
 
 eqd1a <- fmdata |> 
   filter(vname %in% vars) |> 
@@ -65,7 +66,7 @@ summary(eqd1b)
 
 ```
 
-## Equation 1 – log of real per-capita consumption of services
+## Estimation and results
 
 ```{r}
 #| label: eq1-estimation
@@ -86,9 +87,20 @@ results <- ar1_correction(
 
 # View results
 summary(results$fit)  # Final 2SLS model
-results$rho_initial   # Initial AR(1) coefficient
-results$rho           # Final AR(1) coefficient
-results$iterations    # Number of iterations
+
+```
+
+## Fair's results for the equation
+
+![](images/clipboard-3503997208.png)
+
+## Details and diagnostics
+
+```{r}
+#| label: diagnostics
+#| output: true
+
+results[!names(results) %in% "fit"]
 
 # Diagnostic checks
 # Plot residuals over time
@@ -97,16 +109,7 @@ plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "T
 # ACF of residuals
 acf(residuals(results$fit), main = "ACF of Residuals")
 
-# Estimated AR(1) coefficient (rho)
-cat("Estimated AR(1) coefficient (rho):", results$rho, "\n")
-
-
-
 ```
-
-## Fair's results for the equation
-
-![](images/clipboard-3503997208.png)
 
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()

@@ -31,6 +31,8 @@ ar1_correction <- function(data, formula, instruments, max_iter = 100, tol = 1e-
   # Estimate initial AR(1) coefficient using arima
   fit_rho <- arima(residuals_iv, order = c(1, 0, 0), include.mean = FALSE)
   rho_initial <- coef(fit_rho)["ar1"]
+  print(paste0("Initial value of rho: ", rho_initial))
+  
   rho_old <- rho_initial
   
   # Iterative Cochrane-Orcutt procedure
