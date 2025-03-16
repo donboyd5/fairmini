@@ -1,0 +1,17 @@
+<!-- {{< include _diagnostics.qmd >}} -->
+
+## Details and diagnostics
+
+```{r}
+#| output: true
+
+results[!names(results) %in% "fit"]
+
+# Diagnostic checks
+# Plot residuals over time
+plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "Time", ylab = "Residuals")
+
+# ACF of residuals
+acf(residuals(results$fit), main = "ACF of Residuals")
+
+```

@@ -15,6 +15,7 @@ libs <- function(){
   
   library(here)
   library(fs)
+  library(btools)
 }
 
 suppressPackageStartupMessages(libs())

@@ -4,24 +4,29 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Equation 1 – log of real per-capita consumer expenditures on services
+# Equation 1 – Consumer expenditures on services
+
+Estimated as log of real per-capita consumer expenditures on services
 
 {{< include _setup.qmd >}}
 
 {{< include _load_data.qmd >}}
 
-```{r}
-#| label: constants
+## Variables in the model
 
-# AA AG1, AG2, AG3 C, C2 CS POP RS YD
-vars <- c("AA", "C", "C2", "CS", "POP", "RS", "YD")
+Basic specification:
 
+C, C2, AG1, AG2, AG3, ln_cs_pop_l1, ln_yd_pop, RS, ln_aa_pop_l1
 
-```
+Instruments:
+
+Lags test adds ln_cs_pop_l2, ln_yd_pop_l1, RS_l1
 
 ```{r}
 #| label: eq
 #| output: false
+
+vars <- c("AA", "C", "C2", "CS", "POP", "RS", "YD")
 
 data1 <- fmdata |> 
   filter(vname %in% vars) |> 
@@ -35,11 +40,12 @@ data2 <- data1 |>
   arrange(date) |> 
   mutate(aa_pop = AA / POP,
          cs_pop = CS / POP,
-         yda_pop = YD / POP,
+         yd_pop = YD / POP,
          ln_cs_pop = log(cs_pop),
          ln_aa_pop_l1 = lag(log(aa_pop)),
          ln_cs_pop_l1 = lag(ln_cs_pop),
-         ln_yda_pop = log(yda_pop),
+         ln_yd_pop = log(yd_pop),
+         ln_yd_pop_l1 = lag(ln_yd_pop),
          idx = row_number(),
          C = 1,
          C2 = case_when(
@@ -57,14 +63,23 @@ summary(data2)
 
 ```
 
+## Fair's results for the equation
+
+![](images/clipboard-3503997208.png)
+
 ## Estimation and results
 
 ```{r}
 #| label: eq-estimation
 #| output: true
 
-formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yda_pop + RS + ln_aa_pop_l1
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
+formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
+instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1 + ln_cs_pop_l2 + ln_yd_pop_l1 + RS_l1
+
+# formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
+# instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yd_pop + RS_l1 + ln_aa_pop_l1
+
+# iv_formula_combine(formula, instruments)
 
 # Apply AR(1) correction with damping
 results <- ar1_correction(
@@ -81,26 +96,7 @@ summary(results$fit)  # Final 2SLS model
 
 ```
 
-## Fair's results for the equation
-
-![](images/clipboard-3503997208.png)
-
-## Details and diagnostics
-
-```{r}
-#| label: diagnostics
-#| output: true
-
-results[!names(results) %in% "fit"]
-
-# Diagnostic checks
-# Plot residuals over time
-plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "Time", ylab = "Residuals")
-
-# ACF of residuals
-acf(residuals(results$fit), main = "ACF of Residuals")
-
-```
+{{< include _diagnostics.qmd >}}
 
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()
