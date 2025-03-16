@@ -5,7 +5,7 @@ execute:
   eval: true
   # echo: false
   output: false
-  freeze: false  # auto: during global project renders, re-render only when source changes  
+  freeze: auto  # auto: during global project renders, re-render only when source changes  
 
 book:
   title: "fairmini"
@@ -16,6 +16,7 @@ book:
     - model_description.qmd
     - data.qmd
     - equation1.qmd
+    - equation2.qmd
 
 format:
   html:

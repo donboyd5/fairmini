@@ -5,6 +5,7 @@
 
 /.quarto/
 _book/
+_freeze/
 data/
 
 *.xls*
