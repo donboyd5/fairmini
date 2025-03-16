@@ -29,5 +29,18 @@ DFMFP <- fs::path(DRAW, "FMFP")
 
 source(fs::path(DR, "functions.R"))
 
+```
+
+```{r}
+# constants
+
+smpl <- list(start="1954-01-01", end="2014-10-01")
+
+# need C, C2 (C2 is time-varying constant)
+# constant term is same up to 1969:4 (T1), then changes linearly up to some 1988:4 (T2) and unchanged through T
+# C2 parameters
+T1 <- "1969-10-01"
+T2 <- "1988-10-01"
+ 
 
 ```

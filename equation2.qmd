@@ -13,18 +13,12 @@ editor_options:
 ```{r}
 #| label: constants
 
-smpl <- list(start="1954-01-01", end="2014-10-01")
-
-# C constant
-# C2 exog time varying constant term. 1, 2, 3, 4, 5, 6, 7, 8
 # AA AG1, AG2, AG3 C, C2 CS POP RS YD
 vars <- c("AA", "C", "C2", "CN", "POP", "RS", "YD")
 
-# need C, C2
-# constant term is same up to 1969:4 (T1), then changes linearly up to some 1988:4 (T2) and unchanged through T
-# C2 parameters
-T1 <- "1969-10-01"
-T2 <- "1988-10-01"
+formula <- ln_cn_pop ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yda_pop + RS
+instruments <- ~ C + C2 + AG1 + AG2 + AG3 + RS + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_yda_pop + ln_aa_pop_l1
+# instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l2 + ln_cn_pop_d1l1 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
 
 ```
 
@@ -69,16 +63,45 @@ summary(data2)
 
 ```
 
+## Determining which variables to use as instruments
+
+From Fair’s setup, the key point is that current consumption (log(CN/POP)) and current disposable income (log(YD/POP)) are treated as jointly (endogenously) determined, while the other regressors are either explicitly exogenous or “predetermined” (lagged) variables. In a standard 2SLS/IV setting, you use all of the truly exogenous variables (and any valid lagged endogenous variables) from the system as instruments for the endogenous right‐hand‐side variable(s).
+
+-   **Endogenous vs. Exogenous**
+
+    -   **Endogenous (needs instruments)**
+
+        -   log(CN/POP) on the left‐hand side, and also its current value on the right if it appears (though typically consumption appears on the LHS only; if the equation is in differences or has current vs. lagged logs on the RHS, then the current log of consumption is a function of the error term).
+
+        -   log(YD/POP) (disposable income) is determined simultaneously in the larger system (it appears in the income and/or tax/transfer equations).
+
+    -   **Exogenous or Predetermined (valid as instruments)**
+
+        -   The **time trend polynomials** C, C2 are exogenous.
+
+        -   The **age‐distribution variables** AG1, AG2, AG3 are demographic measures taken as exogenous.
+
+        -   **Interest rate (RS)** is typically exogenous in this mini model (treated as policy‐determined).
+
+        -   **Lagged values** of any endogenous variables (e.g. lag of log(CN/POP), lag of Δlog(CN/POP), lag of log(AA/POP)) are assumed predetermined in Fair’s framework, so they can serve as valid instruments.
+
+-   **Putting That into AER::ivreg**
+
+    -   On the left‐hand side of the equation, you have log(CN/POP).
+
+    -   On the right‐hand side, you suspect that log(YD/POP) is endogenous (and possibly the contemporaneous log(CN/POP) if it entered the equation).
+
+    -   Consequently, all of the exogenous/predetermined variables—namely C, C2, AG1, AG2, AG3, RS, and the lagged endogenous terms—go into the instrument list.
+
+    -   In short, **the instruments are all of the exogenous and lagged variables** (i.e., C, C2, AG1, AG2, AG3, RS, and the lagged log terms)
+
+C + C2 + AG1 + AG2 + AG3 + RS + lagged log(CN/POP) + Δlagged log(CN/POP) + lagged log(AA/POP)
+
 ## Estimation and results
 
 ```{r}
 #| label: eq-estimation
 #| output: true
-
-formula <- ln_cn_pop ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yda_pop + RS
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l2 + ln_cn_pop_d1l1 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
-
-# djb ask chatgpt for help determining what to use as instruments
 
 # Apply AR(1) correction with damping
 results <- ar1_correction(
@@ -119,21 +142,3 @@ acf(residuals(results$fit), main = "ACF of Residuals")
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()
 ```
-
-## Variables
-
-AA
-
-AG1, AG2, AG3
-
-C, C2
-
-CS
-
-POP
-
-RS
-
-YD
-
-![](images/clipboard-505718086.png)

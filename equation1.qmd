@@ -13,18 +13,9 @@ editor_options:
 ```{r}
 #| label: constants
 
-smpl <- list(start="1954-01-01", end="2014-10-01")
-
-# C constant
-# C2 exog time varying constant term. 1, 2, 3, 4, 5, 6, 7, 8
 # AA AG1, AG2, AG3 C, C2 CS POP RS YD
 vars <- c("AA", "C", "C2", "CS", "POP", "RS", "YD")
 
-# need C, C2
-# constant term is same up to 1969:4 (T1), then changes linearly up to some 1988:4 (T2) and unchanged through T
-# C2 parameters
-T1 <- "1969-10-01"
-T2 <- "1988-10-01"
 
 ```
 
@@ -114,21 +105,3 @@ acf(residuals(results$fit), main = "ACF of Residuals")
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()
 ```
-
-## Variables
-
-AA
-
-AG1, AG2, AG3
-
-C, C2
-
-CS
-
-POP
-
-RS
-
-YD
-
-![](images/clipboard-505718086.png)
