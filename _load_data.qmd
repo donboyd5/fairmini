@@ -13,3 +13,42 @@ fmobjects <- readRDS(fs::path(DDATA, "fmobjects.rds"))
 list2env(fmobjects, envir = .GlobalEnv)
 
 ```
+
+```{r}
+
+# maybe create all potential variables???
+
+data1 <- fmdata |> 
+  filter(vname %in% vars) |> 
+  bind_rows(fmages)
+count(data1, vname) # AA, CS, POP, RS, YD
+
+data2 <- data1 |> 
+  select(-c(start, end)) |> 
+  unnest(cols = data) |> 
+  pivot_wider(names_from = vname) |> 
+  arrange(date) |> 
+  mutate(aa_pop = AA / POP,
+         cs_pop = CS / POP,
+         yd_pop = YD / POP,
+         ln_cs_pop = log(cs_pop),
+         ln_aa_pop_l1 = lag(log(aa_pop)),
+         ln_cs_pop_l1 = lag(ln_cs_pop),
+         ln_yd_pop = log(yd_pop),
+         ln_yd_pop_l1 = lag(ln_yd_pop),
+         idx = row_number(),
+         C = 1,
+         C2 = case_when(
+           date < T1 ~ 0,
+           date < T2 ~ idx - idx[date == T1],
+           date >= T2 ~ idx[date == T2] - idx[date == T1],
+           .default = NA_real_)) |> 
+  # get additional lagged values possibly needed for instrumental variables
+  mutate(ln_cs_pop_l2  = lag(ln_cs_pop, 2),
+         RS_l1         = lag(RS)) |> 
+  na.omit() |>  # drop any row that has an NA in any variable
+  filter(date >= smpl$start,
+         date <= smpl$end)
+
+
+```

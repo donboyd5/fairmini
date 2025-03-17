@@ -81,3 +81,7 @@ Using Equation 2 as an example, the LHS variable is log(CN/POP). The RHS variabl
     -   In short, **the instruments are all of the exogenous and lagged variables** (i.e., C, C2, AG1, AG2, AG3, RS, and the lagged log terms)
 
 C + C2 + AG1 + AG2 + AG3 + RS + lagged log(CN/POP) + Δlagged log(CN/POP) + lagged log(AA/POP)
+
+Here is a table of first-stage regressors from the appendix of the documentation:
+
+![](images/clipboard-1339214686.png)

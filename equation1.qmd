@@ -22,11 +22,26 @@ Instruments:
 
 Lags test adds ln_cs_pop_l2, ln_yd_pop_l1, RS_l1
 
+![](images/clipboard-1148401271.png)
+
+```{r}
+#| label: variables
+
+formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
+
+instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + RS + ln_aa_pop_l1 + ln_cs_pop_l2 + ln_yd_pop_l1 + RS_l1 # not ln_yd_pop
+
+# lags needed:
+# 1st lag: ln_cs_pop, ln_yd_pop, RS, ln_aa_pop, C2, AG1, AG2, AG3, ln_ex_pop
+# 2nd lag: ln_cs_pop, ln_aa_pop
+
+```
+
 ```{r}
 #| label: eq
 #| output: false
 
-vars <- c("AA", "C", "C2", "CS", "POP", "RS", "YD")
+vars <- c("AA", "C", "C2", "CS", "EX", "POP", "RS", "YD")
 
 data1 <- fmdata |> 
   filter(vname %in% vars) |> 
@@ -73,8 +88,7 @@ summary(data2)
 #| label: eq-estimation
 #| output: true
 
-formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + RS + ln_aa_pop_l1 + ln_cs_pop_l2 + ln_yd_pop_l1 + RS_l1 # not ln_yd_pop
+
 
 # formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
 # instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yd_pop + RS_l1 + ln_aa_pop_l1
