@@ -74,7 +74,7 @@ summary(data2)
 #| output: true
 
 formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1 + ln_cs_pop_l2 + ln_yd_pop_l1 + RS_l1
+instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + RS + ln_aa_pop_l1 + ln_cs_pop_l2 + ln_yd_pop_l1 + RS_l1 # not ln_yd_pop
 
 # formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
 # instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yd_pop + RS_l1 + ln_aa_pop_l1

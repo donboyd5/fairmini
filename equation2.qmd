@@ -27,7 +27,12 @@ NO rho
 ```{r}
 
 formula <- ln_cn_pop ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yd_pop + RS
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yd_pop + RS +
+
+# which set of instruments is better??
+# instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yd_pop + RS +
+#   ln_cn_pop_l3 + ln_yd_pop_l1 + RS_l1
+
+instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + RS + # NOT ln_yd_pop
   ln_cn_pop_l3 + ln_yd_pop_l1 + RS_l1
 
 # iv_formula_combine(formula, instruments)
