@@ -15,40 +15,63 @@ list2env(fmobjects, envir = .GlobalEnv)
 ```
 
 ```{r}
+#| echo: false
+#| messages: false
+#| notes: false
+#| warnings: false
 
-# maybe create all potential variables???
+# create all lhs and rhs variables
+
+vars <- c("POP", "AA", "CS", "RS", "YD") 
+popvars <- c("AA", "CS", "YD")
+# lnvars <- c("aa_pop", "cs_pop", "yd_pop")
+lnvars <- paste0(popvars, "_pop")
+# d1vars <-
+l1vars <- c("ln_AA_pop", "ln_CS_pop", "ln_YD_pop", "RS")
+l2vars <- c("ln_CS_pop")
 
 data1 <- fmdata |> 
-  filter(vname %in% vars) |> 
   bind_rows(fmages)
-count(data1, vname) # AA, CS, POP, RS, YD
+tmp <- count(data1, vname) # AA, CS, POP, RS, YD
 
 data2 <- data1 |> 
-  select(-c(start, end)) |> 
+  filter(vname %in% vars) |>  
   unnest(cols = data) |> 
   pivot_wider(names_from = vname) |> 
   arrange(date) |> 
-  mutate(aa_pop = AA / POP,
-         cs_pop = CS / POP,
-         yd_pop = YD / POP,
-         ln_cs_pop = log(cs_pop),
-         ln_aa_pop_l1 = lag(log(aa_pop)),
-         ln_cs_pop_l1 = lag(ln_cs_pop),
-         ln_yd_pop = log(yd_pop),
-         ln_yd_pop_l1 = lag(ln_yd_pop),
-         idx = row_number(),
+  mutate(idx = row_number(),
          C = 1,
          C2 = case_when(
            date < T1 ~ 0,
            date < T2 ~ idx - idx[date == T1],
            date >= T2 ~ idx[date == T2] - idx[date == T1],
            .default = NA_real_)) |> 
-  # get additional lagged values possibly needed for instrumental variables
-  mutate(ln_cs_pop_l2  = lag(ln_cs_pop, 2),
-         RS_l1         = lag(RS)) |> 
+  relocate(C, CS, .after = date) |> 
+  select(-idx, -start, -end) |> 
+  mutate(across(all_of(popvars),
+                list(pop = \(x) x / POP)),
+         across(all_of(lnvars),
+                log,
+                .names = "ln_{.col}"),
+         across(all_of(l1vars),
+                       \(x) lag(x, 1),
+                       .names = "{.col}_l1"),
+         across(all_of(l2vars),
+                       \(x) lag(x, 2),
+                       .names = "{.col}_l2"))
+  
+data2
+
+data3 <- data2 |> 
   na.omit() |>  # drop any row that has an NA in any variable
   filter(date >= smpl$start,
-         date <= smpl$end)
+         date <= smpl$end) |> 
+  pivot_longer(cols = -date) |> 
+  arrange(str_to_upper(name), date)
+glimpse(data3)
 
+data4 <- data3 |> 
+  pivot_wider()
+data4  
 
 ```
