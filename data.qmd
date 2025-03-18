@@ -65,7 +65,7 @@ Example:
 
 -   AA is wealth
 -   AA_pop is wealth / population
--   AA_pop_ln is log(wealth(population))
+-   AA_pop_ln is log(wealth /population)
 -   AA_pop_ln_l1 is log(wealth / population) lagged once
 -   AA_pop_ln_d1 is first difference of log(wealth / population)
 -   AA_pop_ln_d1_l1 is lagged first difference of log(wealth / population)
@@ -78,22 +78,18 @@ Example:
 
 # create all lhs and rhs variables
 # EX_pop_ln_l1
-# 
+# CN_pop_ln_d1_l1
 
-vars <- c("AA", "AG1", "AG2", "AG3", "CS", "EX", "POP", "RS", "YD") 
-popvars <- c("AA", "CS", "EX", "YD")
+vars <- c("AA", "AG1", "AG2", "AG3", "CN", "CS", "EX", "POP", "RS", "YD") 
+popvars <- c("AA", "CN", "CS", "EX", "YD")
 lnvars <- paste0(popvars, "_pop")
-# d1vars <-
-l1vars <- c("AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CS_pop_ln", "EX_pop_ln", "YD_pop_ln", "RS")
+d1vars <- "CN_pop_ln"
+l1vars <- c("AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CN_pop_ln", "CN_pop_ln_d1", "CS_pop_ln", "EX_pop_ln", "YD_pop_ln", "RS")
 l2vars <- c("AA_pop_ln", "CS_pop_ln")
 
-tmp2 <- count(fmdata, vname)
+tmp <- count(fmdata, vname)
 
 data1 <- fmdata |> 
-  bind_rows(fmages)
-tmp <- count(data1, vname)
-
-data2 <- fmdata |> 
   filter(vname %in% vars) |>  
   unnest(cols = data) |> 
   pivot_wider(names_from = vname) |> 
@@ -112,27 +108,30 @@ data2 <- fmdata |>
          across(all_of(lnvars),
                 log,
                 .names = "{.col}_ln"),
+         across(all_of(d1vars),
+                \(x) x - lag(x),
+                .names = "{.col}_d1"),
          across(all_of(l1vars),
                        \(x) lag(x, 1),
                        .names = "{.col}_l1"),
          across(all_of(l2vars),
                        \(x) lag(x, 2),
                        .names = "{.col}_l2"))
-  
-data2
+data1
+ns(data1)
 
-data3 <- data2 |> 
+data2 <- data1 |> 
   na.omit() |>  # drop any row that has an NA in any variable
   filter(date >= smpl$start,
          date <= smpl$end) |> 
   pivot_longer(cols = -date) |> 
   arrange(str_to_upper(name), date)
-glimpse(data3)
+glimpse(data2)
 
-data4 <- data3 |> 
+data3 <- data2 |> 
   pivot_wider()
-data4  
+data3
 
-saveRDS(data4, fs::path(DDATA, "fmall.rds"))
+saveRDS(data3, fs::path(DDATA, "fmall.rds"))
 
 ```

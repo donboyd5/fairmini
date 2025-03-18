@@ -29,7 +29,7 @@ C2, C, AG1, AG2, AG3, CS_pop_ln_l1, YD_pop_ln_l1, RS_l1, AA_pop_ln_l1, C2_l1, AG
 ```{r}
 #| label: variables
 
-ns(fmall)
+# ns(fmall)
 
 formula <- CS_pop_ln ~ -1 + C2 + C + AG1 + AG2 + AG3 + CS_pop_ln_l1 + YD_pop_ln + RS + AA_pop_ln_l1
 

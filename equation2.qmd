@@ -20,66 +20,24 @@ C, C2, AG1, AG2, AG3, ln_cn_pop_l1, ln_cn_pop_d1l1, ln_aa_pop_l1, ln_yd_pop, RS
 
 Instruments:
 
+![](images/clipboard-2018364629.png)
+
+C2, C, AG1, AG2, AG3, CN_pop_ln_l1, CN_pop_ln_d1_l1, AA_pop_ln_l1, YD_pop_ln_l1, RS_l1, EX_pop_ln_l1
+
 Lags test adds ln_cn_pop_l3, ln_yd_pop_l1, and RS_l1.
 
 NO rho
 
 ```{r}
 
-formula <- ln_cn_pop ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yd_pop + RS
-
-# which set of instruments is better??
-# instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yd_pop + RS +
-#   ln_cn_pop_l3 + ln_yd_pop_l1 + RS_l1
-
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + RS + # NOT ln_yd_pop
-  ln_cn_pop_l3 + ln_yd_pop_l1 + RS_l1
+formula <- CN_pop_ln ~ -1 + C2 + C + AG1 + AG2 + AG3 + CN_pop_ln_l1 + CN_pop_ln_d1_l1 + AA_pop_ln_l1 + YD_pop_ln + RS
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + CN_pop_ln_l1 + CN_pop_ln_d1_l1 + AA_pop_ln_l1 + YD_pop_ln_l1 + RS_l1 + EX_pop_ln_l1
 
 # iv_formula_combine(formula, instruments)
+vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
+data <- fmall |> 
+  select(date, all_of(vars))
 
-```
-
-```{r}
-#| label: eq
-#| output: false
-
-vars <- c("AA", "C", "C2", "CN", "POP", "RS", "YD")
-
-data1 <- fmdata |> 
-  filter(vname %in% vars) |> 
-  bind_rows(fmages)
-count(data1, vname) # AA, CN, POP, RS, YD
-
-data2 <- data1 |> 
-  select(-c(start, end)) |> 
-  unnest(cols = data) |> 
-  pivot_wider(names_from = vname) |> 
-  arrange(date) |> 
-  mutate(aa_pop = AA / POP,
-         cn_pop = CN / POP,
-         yd_pop = YD / POP,
-         ln_cn_pop = log(cn_pop),
-         ln_cn_pop_l1 = lag(ln_cn_pop), # rhs
-         ln_cn_pop_l3 = lag(ln_cn_pop, 3),
-         ln_cn_pop_d1 = ln_cn_pop - lag(ln_cn_pop),
-         ln_cn_pop_d1l1 = lag(ln_cn_pop_d1), # rhs
-         
-         ln_aa_pop_l1 = lag(log(aa_pop)), # rhs
-         ln_yd_pop = log(yd_pop), # rhs
-         ln_yd_pop_l1 = lag(ln_yd_pop),
-         RS_l1 = lag(RS),
-         idx = row_number(),
-         C = 1, # rhs
-         C2 = case_when( # rhs
-           date < T1 ~ 0,
-           date < T2 ~ idx - idx[date == T1],
-           date >= T2 ~ idx[date == T2] - idx[date == T1],
-           .default = NA_real_)) |> 
-  na.omit() |>  # drop any row that has an NA in any variable
-  filter(date >= smpl$start,
-         date <= smpl$end)
-summary(data2)
-ns(data2)
 
 ```
 
@@ -93,20 +51,7 @@ ns(data2)
 #| label: eq-estimation
 #| output: true
 
-# Apply AR(1) correction with damping
-# results <- ar1_correction(
-#   data = data2,
-#   formula = formula,
-#   instruments = instruments,
-#   max_iter = 1000,
-#   tol = 1e-5,
-#   damp_factor = 0.5  # Adjust damping factor as needed
-# )
-# 
-# # View results
-# summary(results$fit)  # Final 2SLS model
-
-results <- ivreg(formula, instruments, data=data2)
+results <- ivreg(formula, instruments, data=data)
 summary(results)
 
 results <- list(fit=results)
