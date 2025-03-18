@@ -45,6 +45,8 @@ data <- fmall |>
 
 ![](images/clipboard-359238901.png)
 
+Per Fair, "when the equation is estimated under the assumption of first order serial correlation of the error term, the estimate of the serial correlation coefficient is highly significant. When RHO is added, the estimates of some of the other coefficients are not sensible, and so RHO was not included in the final specification. This is an example of problems associated with the smoothness of aggregate data."
+
 ## Estimation and results
 
 ```{r}

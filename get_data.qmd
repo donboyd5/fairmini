@@ -57,9 +57,9 @@ list2env(fmobjects, envir = .GlobalEnv)
 
 ```
 
-# create needed variables
+# Create needed variables
 
-Naming convention: left to right
+Naming convention: apply operation description from left to right
 
 Example:
 
@@ -72,20 +72,31 @@ Example:
 
 ```{r}
 #| echo: false
+#| output: false
 #| messages: false
 #| notes: false
 #| warnings: false
 
 # create all lhs and rhs variables
-# EX_pop_ln_l1
-# CN_pop_ln_d1_l1
+# C2, C, AG1, AG2, AG3, a, KD_pop_l1, YD_pop, RM_x_CDA, AA_pop_l1
 
-vars <- c("AA", "AG1", "AG2", "AG3", "CN", "CS", "EX", "POP", "RS", "YD") 
-popvars <- c("AA", "CN", "CS", "EX", "YD")
+vars <- c("AA", "AG1", "AG2", "AG3", "CD", "CN", "CS",
+          "DELD", "EX", 
+          "KD", "POP", "RM", "RS", "YD") 
+popvars <- c("AA", "CD", "CN", "CS", "EX", "KD", "YD")
 lnvars <- paste0(popvars, "_pop")
-d1vars <- "CN_pop_ln"
-l1vars <- c("AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CN_pop_ln", "CN_pop_ln_d1", "CS_pop_ln", "EX_pop_ln", "YD_pop_ln", "RS")
+d1vars <- c("CD_pop", "CN_pop_ln")
+l1vars <- c("AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CD_pop",
+            "CN_pop_ln", "CN_pop_ln_d1", "CS_pop_ln",
+            "EX_pop_ln", "KD_pop", "RS", "YD_pop_ln")
 l2vars <- c("AA_pop_ln", "CS_pop_ln")
+
+# Notes:
+#   a = DELD * KD_pop_l1 - CD_pop_l1
+#   RM_x_CDA
+
+# TODO:
+#   create CDA, then RM_x_CDA
 
 tmp <- count(fmdata, vname)
 
@@ -116,7 +127,8 @@ data1 <- fmdata |>
                        .names = "{.col}_l1"),
          across(all_of(l2vars),
                        \(x) lag(x, 2),
-                       .names = "{.col}_l2"))
+                       .names = "{.col}_l2")) |> 
+  mutate(a = DELD * KD_pop_l1 - CD_pop_l1)
 data1
 ns(data1)
 

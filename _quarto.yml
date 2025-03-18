@@ -14,7 +14,8 @@ book:
   chapters:
     - index.qmd
     - model_description.qmd
-    - data.qmd
+    - get_data.qmd
+    - explore_data.qmd
     - equation1.qmd
     - equation2.qmd
 

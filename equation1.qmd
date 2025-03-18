@@ -16,11 +16,11 @@ Estimated as log of real per-capita consumer expenditures on services
 
 Basic specification:
 
-C, C2, AG1, AG2, AG3, ln_cs_pop_l1, ln_yd_pop, RS, ln_aa_pop_l1
+C, C2, AG1, AG2, AG3, CS_pop_ln_l1, YD_pop_ln, RS, AA_pop_ln_l1
 
 Instruments:
 
-Lags test adds ln_cs_pop_l2, ln_yd_pop_l1, RS_l1
+Lags test adds CS_pop_ln_l2, YD_pop_ln_l1, RS_l1
 
 ![](images/clipboard-1148401271.png)
 
