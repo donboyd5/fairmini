@@ -16,7 +16,7 @@ book:
     - model_description.qmd
     - data.qmd
     - equation1.qmd
-    - equation2.qmd
+    # - equation2.qmd
 
 format:
   html:

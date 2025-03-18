@@ -24,57 +24,21 @@ Lags test adds ln_cs_pop_l2, ln_yd_pop_l1, RS_l1
 
 ![](images/clipboard-1148401271.png)
 
+C2, C, AG1, AG2, AG3, CS_pop_ln_l1, YD_pop_ln_l1, RS_l1, AA_pop_ln_l1, C2_l1, AG1_l1, AG2_l1, AG3_l1, CS_pop_ln_l2, AA_pop_ln_l2, EX_pop_ln_l1
+
 ```{r}
 #| label: variables
 
-formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
+ns(fmall)
 
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + RS + ln_aa_pop_l1 + ln_cs_pop_l2 + ln_yd_pop_l1 + RS_l1 # not ln_yd_pop
+formula <- CS_pop_ln ~ -1 + C2 + C + AG1 + AG2 + AG3 + CS_pop_ln_l1 + YD_pop_ln + RS + AA_pop_ln_l1
 
-# lags needed:
-# 1st lag: ln_cs_pop, ln_yd_pop, RS, ln_aa_pop, C2, AG1, AG2, AG3, ln_ex_pop
-# 2nd lag: ln_cs_pop, ln_aa_pop
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + CS_pop_ln_l1 + YD_pop_ln_l1 + RS_l1 + AA_pop_ln_l1 + C2_l1 + AG1_l1 + AG2_l1 + AG3_l1 + CS_pop_ln_l2 + AA_pop_ln_l2 + EX_pop_ln_l1
 
-```
-
-```{r}
-#| label: eq
-#| output: false
-
-vars <- c("AA", "C", "C2", "CS", "EX", "POP", "RS", "YD")
-
-data1 <- fmdata |> 
-  filter(vname %in% vars) |> 
-  bind_rows(fmages)
-count(data1, vname) # AA, CS, POP, RS, YD
-
-data2 <- data1 |> 
-  select(-c(start, end)) |> 
-  unnest(cols = data) |> 
-  pivot_wider(names_from = vname) |> 
-  arrange(date) |> 
-  mutate(aa_pop = AA / POP,
-         cs_pop = CS / POP,
-         yd_pop = YD / POP,
-         ln_cs_pop = log(cs_pop),
-         ln_aa_pop_l1 = lag(log(aa_pop)),
-         ln_cs_pop_l1 = lag(ln_cs_pop),
-         ln_yd_pop = log(yd_pop),
-         ln_yd_pop_l1 = lag(ln_yd_pop),
-         idx = row_number(),
-         C = 1,
-         C2 = case_when(
-           date < T1 ~ 0,
-           date < T2 ~ idx - idx[date == T1],
-           date >= T2 ~ idx[date == T2] - idx[date == T1],
-           .default = NA_real_)) |> 
-  # get additional lagged values possibly needed for instrumental variables
-  mutate(ln_cs_pop_l2  = lag(ln_cs_pop, 2),
-         RS_l1         = lag(RS)) |> 
-  na.omit() |>  # drop any row that has an NA in any variable
-  filter(date >= smpl$start,
-         date <= smpl$end)
-summary(data2)
+# iv_formula_combine(formula, instruments)
+vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
+data <- fmall |> 
+  select(date, all_of(vars))
 
 ```
 
@@ -88,16 +52,9 @@ summary(data2)
 #| label: eq-estimation
 #| output: true
 
-
-
-# formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yd_pop + RS + ln_aa_pop_l1
-# instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yd_pop + RS_l1 + ln_aa_pop_l1
-
-# iv_formula_combine(formula, instruments)
-
 # Apply AR(1) correction with damping
 results <- ar1_correction(
-  data = data2,
+  data = data,
   formula = formula,
   instruments = instruments,
   max_iter = 1000,

@@ -1,77 +1,8 @@
 <!-- {{< include _setup.qmd >}} -->
 
 ```{r}
-#| echo: false
-#| messages: false
-#| notes: false
-#| warnings: false
 
-# put the following shortcode on a standalone line in any qmd file that uses this code:
-# {{< include _load_data.qmd >}}
-
-fmobjects <- readRDS(fs::path(DDATA, "fmobjects.rds"))
-list2env(fmobjects, envir = .GlobalEnv)
-
-```
-
-```{r}
-#| echo: false
-#| messages: false
-#| notes: false
-#| warnings: false
-
-# create all lhs and rhs variables
-
-vars <- c("POP", "AA", "CS", "RS", "YD") 
-popvars <- c("AA", "CS", "YD")
-# lnvars <- c("aa_pop", "cs_pop", "yd_pop")
-lnvars <- paste0(popvars, "_pop")
-# d1vars <-
-l1vars <- c("ln_AA_pop", "ln_CS_pop", "ln_YD_pop", "RS")
-l2vars <- c("ln_CS_pop")
-
-data1 <- fmdata |> 
-  bind_rows(fmages)
-tmp <- count(data1, vname) # AA, CS, POP, RS, YD
-
-data2 <- data1 |> 
-  filter(vname %in% vars) |>  
-  unnest(cols = data) |> 
-  pivot_wider(names_from = vname) |> 
-  arrange(date) |> 
-  mutate(idx = row_number(),
-         C = 1,
-         C2 = case_when(
-           date < T1 ~ 0,
-           date < T2 ~ idx - idx[date == T1],
-           date >= T2 ~ idx[date == T2] - idx[date == T1],
-           .default = NA_real_)) |> 
-  relocate(C, CS, .after = date) |> 
-  select(-idx, -start, -end) |> 
-  mutate(across(all_of(popvars),
-                list(pop = \(x) x / POP)),
-         across(all_of(lnvars),
-                log,
-                .names = "ln_{.col}"),
-         across(all_of(l1vars),
-                       \(x) lag(x, 1),
-                       .names = "{.col}_l1"),
-         across(all_of(l2vars),
-                       \(x) lag(x, 2),
-                       .names = "{.col}_l2"))
-  
-data2
-
-data3 <- data2 |> 
-  na.omit() |>  # drop any row that has an NA in any variable
-  filter(date >= smpl$start,
-         date <= smpl$end) |> 
-  pivot_longer(cols = -date) |> 
-  arrange(str_to_upper(name), date)
-glimpse(data3)
-
-data4 <- data3 |> 
-  pivot_wider()
-data4  
+fmall <- readRDS(fs::path(DDATA, "fmall.rds"))
+# glimpse(fmall)
 
 ```
