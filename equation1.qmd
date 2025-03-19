@@ -4,58 +4,47 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Equation 1 – log of real per-capita consumer expenditures on services
+# Equation 1 – Consumer expenditures on services
+
+Estimated as log of real per-capita consumer expenditures on services
 
 {{< include _setup.qmd >}}
 
 {{< include _load_data.qmd >}}
 
+## Variables in the model
+
+Basic specification:
+
+C, C2, AG1, AG2, AG3, CS_pop_ln_l1, YD_pop_ln, RS, AA_pop_ln_l1
+
+Instruments:
+
+Lags test adds CS_pop_ln_l2, YD_pop_ln_l1, RS_l1
+
+![](images/clipboard-1148401271.png)
+
+C2, C, AG1, AG2, AG3, CS_pop_ln_l1, YD_pop_ln_l1, RS_l1, AA_pop_ln_l1, C2_l1, AG1_l1, AG2_l1, AG3_l1, CS_pop_ln_l2, AA_pop_ln_l2, EX_pop_ln_l1
+
 ```{r}
-#| label: constants
+#| label: variables
 
-# AA AG1, AG2, AG3 C, C2 CS POP RS YD
-vars <- c("AA", "C", "C2", "CS", "POP", "RS", "YD")
+# ns(fmall)
 
+formula <- CS_pop_ln ~ -1 + C2 + C + AG1 + AG2 + AG3 + CS_pop_ln_l1 + YD_pop_ln + RS + AA_pop_ln_l1
+
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + CS_pop_ln_l1 + YD_pop_ln_l1 + RS_l1 + AA_pop_ln_l1 + C2_l1 + AG1_l1 + AG2_l1 + AG3_l1 + CS_pop_ln_l2 + AA_pop_ln_l2 + EX_pop_ln_l1
+
+# iv_formula_combine(formula, instruments)
+vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
+data <- fmall |> 
+  select(date, all_of(vars))
 
 ```
 
-```{r}
-#| label: eq
-#| output: false
+## Fair's results for the equation
 
-data1 <- fmdata |> 
-  filter(vname %in% vars) |> 
-  bind_rows(fmages)
-count(data1, vname) # AA, CS, POP, RS, YD
-
-data2 <- data1 |> 
-  select(-c(start, end)) |> 
-  unnest(cols = data) |> 
-  pivot_wider(names_from = vname) |> 
-  arrange(date) |> 
-  mutate(aa_pop = AA / POP,
-         cs_pop = CS / POP,
-         yda_pop = YD / POP,
-         ln_cs_pop = log(cs_pop),
-         ln_aa_pop_l1 = lag(log(aa_pop)),
-         ln_cs_pop_l1 = lag(ln_cs_pop),
-         ln_yda_pop = log(yda_pop),
-         idx = row_number(),
-         C = 1,
-         C2 = case_when(
-           date < T1 ~ 0,
-           date < T2 ~ idx - idx[date == T1],
-           date >= T2 ~ idx[date == T2] - idx[date == T1],
-           .default = NA_real_)) |> 
-  # get additional lagged values possibly needed for instrumental variables
-  mutate(ln_cs_pop_l2  = lag(ln_cs_pop, 2),
-         RS_l1         = lag(RS)) |> 
-  na.omit() |>  # drop any row that has an NA in any variable
-  filter(date >= smpl$start,
-         date <= smpl$end)
-summary(data2)
-
-```
+![](images/clipboard-3503997208.png)
 
 ## Estimation and results
 
@@ -63,12 +52,9 @@ summary(data2)
 #| label: eq-estimation
 #| output: true
 
-formula <- ln_cs_pop ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l1 + ln_yda_pop + RS + ln_aa_pop_l1
-instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cs_pop_l2 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
-
 # Apply AR(1) correction with damping
 results <- ar1_correction(
-  data = data2,
+  data = data,
   formula = formula,
   instruments = instruments,
   max_iter = 1000,
@@ -81,26 +67,7 @@ summary(results$fit)  # Final 2SLS model
 
 ```
 
-## Fair's results for the equation
-
-![](images/clipboard-3503997208.png)
-
-## Details and diagnostics
-
-```{r}
-#| label: diagnostics
-#| output: true
-
-results[!names(results) %in% "fit"]
-
-# Diagnostic checks
-# Plot residuals over time
-plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "Time", ylab = "Residuals")
-
-# ACF of residuals
-acf(residuals(results$fit), main = "ACF of Residuals")
-
-```
+{{< include _diagnostics.qmd >}}
 
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()

@@ -4,117 +4,40 @@ editor_options:
   chunk_output_type: console
 ---
 
-# Equation 2 – log of real per-capita consumer expenditures on nondurables
+# Equation 2 – Consumer expenditures on nondurables
+
+Estimated as log of real per-capita consumer expenditures on nondurables
 
 {{< include _setup.qmd >}}
 
 {{< include _load_data.qmd >}}
 
-```{r}
-#| label: constants
+## Variables in the model
 
-# AA AG1, AG2, AG3 C, C2 CS POP RS YD
-vars <- c("AA", "C", "C2", "CN", "POP", "RS", "YD")
+Basic specification:
 
-formula <- ln_cn_pop ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_aa_pop_l1 + ln_yda_pop + RS
-instruments <- ~ C + C2 + AG1 + AG2 + AG3 + RS + ln_cn_pop_l1 + ln_cn_pop_d1l1 + ln_yda_pop + ln_aa_pop_l1
-# instruments <- ~ C2 + AG1 + AG2 + AG3 + ln_cn_pop_l2 + ln_cn_pop_d1l1 + ln_yda_pop + RS_l1 + ln_aa_pop_l1
+C, C2, AG1, AG2, AG3, ln_cn_pop_l1, ln_cn_pop_d1l1, ln_aa_pop_l1, ln_yd_pop, RS
 
-```
+Instruments:
 
-```{r}
-#| label: eq
-#| output: false
+![](images/clipboard-2018364629.png)
 
-data1 <- fmdata |> 
-  filter(vname %in% vars) |> 
-  bind_rows(fmages)
-count(data1, vname) # AA, CN, POP, RS, YD
+C2, C, AG1, AG2, AG3, CN_pop_ln_l1, CN_pop_ln_d1_l1, AA_pop_ln_l1, YD_pop_ln_l1, RS_l1, EX_pop_ln_l1
 
-data2 <- data1 |> 
-  select(-c(start, end)) |> 
-  unnest(cols = data) |> 
-  pivot_wider(names_from = vname) |> 
-  arrange(date) |> 
-  mutate(aa_pop = AA / POP,
-         cn_pop = CN / POP,
-         yda_pop = YD / POP,
-         ln_cn_pop = log(cn_pop),
-         ln_cn_pop_l1 = lag(ln_cn_pop), # rhs
-         ln_cn_pop_d1 = ln_cn_pop - lag(ln_cn_pop),
-         ln_cn_pop_d1l1 = lag(ln_cn_pop_d1), # rhs
-         
-         ln_aa_pop_l1 = lag(log(aa_pop)), # rhs
-         ln_yda_pop = log(yda_pop), # rhs
-         idx = row_number(),
-         C = 1, # rhs
-         C2 = case_when( # rhs
-           date < T1 ~ 0,
-           date < T2 ~ idx - idx[date == T1],
-           date >= T2 ~ idx[date == T2] - idx[date == T1],
-           .default = NA_real_)) |> 
-  # get additional lagged values possibly needed for instrumental variables
-  mutate(ln_cn_pop_l2  = lag(ln_cn_pop, 2),
-         RS_l1         = lag(RS)) |> 
-  na.omit() |>  # drop any row that has an NA in any variable
-  filter(date >= smpl$start,
-         date <= smpl$end)
-summary(data2)
+Lags test adds ln_cn_pop_l3, ln_yd_pop_l1, and RS_l1.
 
-```
-
-## Determining which variables to use as instruments
-
-From Fair’s setup, the key point is that current consumption (log(CN/POP)) and current disposable income (log(YD/POP)) are treated as jointly (endogenously) determined, while the other regressors are either explicitly exogenous or “predetermined” (lagged) variables. In a standard 2SLS/IV setting, you use all of the truly exogenous variables (and any valid lagged endogenous variables) from the system as instruments for the endogenous right‐hand‐side variable(s).
-
--   **Endogenous vs. Exogenous**
-
-    -   **Endogenous (needs instruments)**
-
-        -   log(CN/POP) on the left‐hand side, and also its current value on the right if it appears (though typically consumption appears on the LHS only; if the equation is in differences or has current vs. lagged logs on the RHS, then the current log of consumption is a function of the error term).
-
-        -   log(YD/POP) (disposable income) is determined simultaneously in the larger system (it appears in the income and/or tax/transfer equations).
-
-    -   **Exogenous or Predetermined (valid as instruments)**
-
-        -   The **time trend polynomials** C, C2 are exogenous.
-
-        -   The **age‐distribution variables** AG1, AG2, AG3 are demographic measures taken as exogenous.
-
-        -   **Interest rate (RS)** is typically exogenous in this mini model (treated as policy‐determined).
-
-        -   **Lagged values** of any endogenous variables (e.g. lag of log(CN/POP), lag of Δlog(CN/POP), lag of log(AA/POP)) are assumed predetermined in Fair’s framework, so they can serve as valid instruments.
-
--   **Putting That into AER::ivreg**
-
-    -   On the left‐hand side of the equation, you have log(CN/POP).
-
-    -   On the right‐hand side, you suspect that log(YD/POP) is endogenous (and possibly the contemporaneous log(CN/POP) if it entered the equation).
-
-    -   Consequently, all of the exogenous/predetermined variables—namely C, C2, AG1, AG2, AG3, RS, and the lagged endogenous terms—go into the instrument list.
-
-    -   In short, **the instruments are all of the exogenous and lagged variables** (i.e., C, C2, AG1, AG2, AG3, RS, and the lagged log terms)
-
-C + C2 + AG1 + AG2 + AG3 + RS + lagged log(CN/POP) + Δlagged log(CN/POP) + lagged log(AA/POP)
-
-## Estimation and results
+NO rho
 
 ```{r}
-#| label: eq-estimation
-#| output: true
 
-# Apply AR(1) correction with damping
-results <- ar1_correction(
-  data = data2,
-  formula = formula,
-  instruments = instruments,
-  max_iter = 1000,
-  tol = 1e-5,
-  damp_factor = 0.5  # Adjust damping factor as needed
-)
+formula <- CN_pop_ln ~ -1 + C2 + C + AG1 + AG2 + AG3 + CN_pop_ln_l1 + CN_pop_ln_d1_l1 + AA_pop_ln_l1 + YD_pop_ln + RS
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + CN_pop_ln_l1 + CN_pop_ln_d1_l1 + AA_pop_ln_l1 + YD_pop_ln_l1 + RS_l1 + EX_pop_ln_l1
 
-# View results
-summary(results$fit)  # Final 2SLS model
+# iv_formula_combine(formula, instruments)
+vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
+data <- fmall |> 
+  select(date, all_of(vars))
+
 
 ```
 
@@ -122,22 +45,22 @@ summary(results$fit)  # Final 2SLS model
 
 ![](images/clipboard-359238901.png)
 
-## Details and diagnostics
+Per Fair, "when the equation is estimated under the assumption of first order serial correlation of the error term, the estimate of the serial correlation coefficient is highly significant. When RHO is added, the estimates of some of the other coefficients are not sensible, and so RHO was not included in the final specification. This is an example of problems associated with the smoothness of aggregate data."
+
+## Estimation and results
 
 ```{r}
-#| label: diagnostics
+#| label: eq-estimation
 #| output: true
 
-results[!names(results) %in% "fit"]
+results <- ivreg(formula, instruments, data=data)
+summary(results)
 
-# Diagnostic checks
-# Plot residuals over time
-plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "Time", ylab = "Residuals")
-
-# ACF of residuals
-acf(residuals(results$fit), main = "ACF of Residuals")
+results <- list(fit=results)
 
 ```
+
+{{< include _diagnostics.qmd >}}
 
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()

@@ -1,0 +1,58 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Explore data
+
+{{< include _setup.qmd >}}
+
+{{< include _load_data.qmd >}}
+
+## Summary statistics
+
+## Interest rates
+
+```{r}
+
+# ns(fmall)
+
+fmall |> 
+  select(date, RM, RS) |> 
+  pivot_longer(cols = -date) |> 
+  mutate(namef=factor(name, 
+                      levels=c("RM", "RS"),
+                      labels = c("Mortgage rate (RM)", "3-month T-bill (RS)"))) |> 
+  ggplot(aes(date, value, colour = namef)) +
+  geom_line(linewidth=1) +
+  scale_x_date(name=NULL, breaks= "10 years", date_labels = "%Y") +
+  scale_y_continuous(name = "percent", breaks=seq(0, 20, 2)) +
+  theme_bw()
+
+```
+
+## CD and CDA
+
+```{r}
+
+check <- fmall |> 
+  select(date, CD, POP, CD_pop, CDA) # POP is in millions; CD looks like billions so multiply by 1000 mentally to get dollars
+
+pdata <- fmall |> 
+  select(date, CD_pop, CDA)
+
+pdata |> 
+  pivot_longer(cols = -date) |> 
+  mutate(namef=factor(name, 
+                      levels=c("CD_pop", "CDA"),
+                      labels = c("Real CD per-capita (CD_pop)", "Peak-to-peak CD_pop (CDA)"))) |> 
+  ggplot(aes(date, value, colour = namef)) +
+  geom_line(linewidth=1) +
+  scale_x_date(name=NULL, breaks= "10 years", date_labels = "%Y") +
+  scale_y_continuous(name = "$ thousands real CD per-capita") +
+  theme_bw() +
+  ggtitle("Real per-capita consumption and peak-to-peak smoothed values")
+
+
+```

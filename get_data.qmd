@@ -1,0 +1,166 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Get and save Fair model data
+
+```{r}
+#| label: notes
+
+# AG1 exog Percent of 16+ population 26-55 minus percent 16-25. BLS data. 1, 2, 3 -- working age minus college age
+# AG2 exog Percent of 16+ population 56-65 minus percent 16-25. BLS data. 1, 2, 3 -- early retirement minus college age
+# AG3 exog Percent of 16+ population 66+ minus percent 16-25. BLS data. 1, 2, 3   -- elderly minus college age
+
+```
+
+{{< include _setup.qmd >}}
+
+```{r}
+#| label: get-save-data
+#| eval: false # set to true when data change
+#| output: false
+
+source(here::here("R", "functions_eviews.R"))
+
+fn <- "fmage.txt"
+fpath <- fs::path(DFMFP, fn)
+
+fmages <- get_eviews(fpath)
+
+fmages |> 
+  unnest(cols = data)
+
+fn <- "fmdata.txt"
+fpath <- fs::path(DFMFP, fn)
+fmdata <- get_eviews(fpath)
+
+fmobjects <- tibble::lst(fmages, fmdata)
+saveRDS(fmobjects, fs::path(DDATA, "fmobjects.rds"))
+
+# fmdata appears to include the data in fmages??
+
+```
+
+```{r}
+#| echo: false
+#| messages: false
+#| notes: false
+#| warnings: false
+
+# put the following shortcode on a standalone line in any qmd file that uses this code:
+# {{< include _load_data.qmd >}}
+
+fmobjects <- readRDS(fs::path(DDATA, "fmobjects.rds"))
+list2env(fmobjects, envir = .GlobalEnv)
+
+```
+
+# Create needed variables
+
+Naming convention: apply operation description from left to right
+
+Example:
+
+-   AA is wealth
+-   AA_pop is wealth / population
+-   AA_pop_ln is log(wealth /population)
+-   AA_pop_ln_l1 is log(wealth / population) lagged once
+-   AA_pop_ln_d1 is first difference of log(wealth / population)
+-   AA_pop_ln_d1_l1 is lagged first difference of log(wealth / population)
+
+```{r}
+#| echo: false
+#| output: false
+#| messages: false
+#| notes: false
+#| warnings: false
+
+# create all lhs and rhs variables
+# C2, C, AG1, AG2, AG3, a, KD_pop_l1, YD_pop, RM_x_CDA, AA_pop_l1
+
+vars <- c("AA", "AG1", "AG2", "AG3", "CD", "CN", "CS",
+          "DELD", "EX", 
+          "KD", "POP", "RM", "RS", "YD") 
+
+popvars <- c("AA", "CD", "CN", "CS", "EX", "KD", "YD")
+
+lnvars <- paste0(popvars, "_pop")
+
+d1vars <- c("CD_pop", "CN_pop_ln")
+
+l1vars <- c("AA_pop", "AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CD_pop",
+            "CN_pop_ln", "CN_pop_ln_d1", "CS_pop_ln",
+            "EX_pop", "EX_pop_ln", "KD_pop", "RS", "YD_pop", "YD_pop_ln")
+
+l2vars <- c("AA_pop_ln", "CS_pop_ln")
+
+# Notes:
+#   a = DELD * KD_pop_l1 - CD_pop_l1
+#   RM_x_CDA = RM * CDA
+#   RM_x_CDA_l1
+
+# TODO:
+#   create CDA, then RM_x_CDA
+
+tmp <- count(fmdata, vname)
+
+# Ray Fair's peak dates needed to calculate CDA:
+# note that dates begin before the sample start so calculate CDA before filtering
+peaksq <- c("1953q1", "1955q3", "1960q2", "1963q2", "1965q4", "1968q3", "1973q2", "1978q4", "1985q1", "1988q4", "1994q1", "1995q4", "2000q3", "2007q2", "2012q1", "2013q4")
+peaksd <- lubridate::yq(peaksq)
+
+data1 <- fmdata |> 
+  filter(vname %in% vars) |>  
+  unnest(cols = data) |> 
+  pivot_wider(names_from = vname) |> 
+  arrange(date) |> 
+  mutate(idx = row_number(),
+         C = 1,
+         C2 = case_when(
+           date < T1 ~ 0,
+           date < T2 ~ idx - idx[date == T1],
+           date >= T2 ~ idx[date == T2] - idx[date == T1],
+           .default = NA_real_)) |> 
+  relocate(C, CS, .after = date) |> 
+  select(-idx, -start, -end) |> 
+  mutate(across(all_of(popvars),
+                list(pop = \(x) x / POP)),
+         across(all_of(lnvars),
+                log,
+                .names = "{.col}_ln"),
+         across(all_of(d1vars),
+                \(x) x - lag(x),
+                .names = "{.col}_d1"),
+         across(all_of(l1vars),
+                       \(x) lag(x, 1),
+                       .names = "{.col}_l1"),
+         across(all_of(l2vars),
+                       \(x) lag(x, 2),
+                       .names = "{.col}_l2")) |> 
+  mutate(a = DELD * KD_pop_l1 - CD_pop_l1,
+         CDpeak = (date %in% peaksd),
+         CDA = ifelse(CDpeak, CD_pop, NA_real_),
+         CDA = stats::approx(date, CDA, xout = date, method = "linear", rule = 1)$y,
+         RM_x_CDA = RM * CDA,
+         RM_x_CDA_l1 = lag(RM_x_CDA)) |> 
+  select(-CDpeak)
+data1
+ns(data1)
+
+data2 <- data1 |> 
+  na.omit() |>  # drop any row that has an NA in any variable
+  filter(date >= smpl$start,
+         date <= smpl$end) |> 
+  pivot_longer(cols = -date) |> 
+  arrange(str_to_upper(name), date)
+glimpse(data2)
+
+data3 <- data2 |> 
+  pivot_wider()
+data3
+
+saveRDS(data3, fs::path(DDATA, "fmall.rds"))
+
+```

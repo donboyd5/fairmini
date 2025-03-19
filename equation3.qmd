@@ -1,0 +1,90 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Equation 3 – Consumer expenditures on durable goods
+
+Estimated as change in real per-capita consumer expenditures on durable goods
+
+{{< include _setup.qmd >}}
+
+{{< include _load_data.qmd >}}
+
+## Variables in the model
+
+### LHS
+
+CD_pop_d1: i.e., CD_pop - CD_pop_l1
+
+### Formula
+
+ C2, C, AG1, AG2, AG3, a, KD_pop_l1, YD_pop, RM_x_CDA, AA_pop_l1
+
+### Instruments
+
+![](images/clipboard-2929396034.png)
+
+Lags test adds...
+
+```{r}
+#| label: variables
+
+# ns(fmall)
+
+formula <- CD_pop_d1 ~ -1 + C2 + C + AG1 + AG2 + AG3 + a + KD_pop_l1 + YD_pop + RM_x_CDA + AA_pop_l1
+
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + KD_pop_l1 + a + YD_pop_l1 + RM_x_CDA_l1 + AA_pop_l1 + EX_pop_l1
+
+# iv_formula_combine(formula, instruments)
+vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
+data <- fmall |> 
+  select(date, all_of(vars))
+
+```
+
+## Fair's comments on the equation
+
+![](images/clipboard-2630736315.png)
+
+## Fair's results for the equation
+
+![](images/clipboard-3353020793.png)
+
+## Estimation and results
+
+```{r}
+#| label: eq-estimation
+#| output: true
+
+# Apply AR(1) correction with damping
+# results <- ar1_correction(
+#   data = data,
+#   formula = formula,
+#   instruments = instruments,
+#   max_iter = 1000,
+#   tol = 1e-5,
+#   damp_factor = 0.5  # Adjust damping factor as needed
+# )
+
+# Fair chose not to do AR1 correction because coefficients did not make sense
+results <- ivreg(formula, instruments, data=data)
+summary(results)
+
+results <- list(fit=results)
+
+# View results
+summary(results$fit)  # Final 2SLS model
+
+```
+
+{{< include _diagnostics.qmd >}}
+
+## My comments
+
+Come back to this.
+
+```{r stop_here, echo=FALSE}
+knitr::knit_exit()
+```
