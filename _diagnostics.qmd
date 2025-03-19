@@ -2,10 +2,27 @@
 
 ## Details and diagnostics
 
+### Summary results
+
 ```{r}
 #| output: true
 
 results[!names(results) %in% "fit"]
+
+```
+
+### Durbin-Watson statistic
+
+```{r}
+#| output: true
+
+lmtest::dwtest(residuals ~ 1, data = list(residuals = residuals(results$fit)))
+```
+
+### Residual plots
+
+```{r}
+#| output: true
 
 # Diagnostic checks
 # Plot residuals over time
@@ -14,6 +31,6 @@ plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "T
 # ACF of residuals
 acf(residuals(results$fit), main = "ACF of Residuals")
 
-lmtest::dwtest(residuals ~ 1, data = list(residuals = residuals(results$fit)))
+
 
 ```
