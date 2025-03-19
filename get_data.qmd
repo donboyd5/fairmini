@@ -19,7 +19,7 @@ editor_options:
 
 ```{r}
 #| label: get-save-data
-#| eval: false
+#| eval: false # set to true when data change
 #| output: false
 
 source(here::here("R", "functions_eviews.R"))
@@ -83,22 +83,33 @@ Example:
 vars <- c("AA", "AG1", "AG2", "AG3", "CD", "CN", "CS",
           "DELD", "EX", 
           "KD", "POP", "RM", "RS", "YD") 
+
 popvars <- c("AA", "CD", "CN", "CS", "EX", "KD", "YD")
+
 lnvars <- paste0(popvars, "_pop")
+
 d1vars <- c("CD_pop", "CN_pop_ln")
-l1vars <- c("AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CD_pop",
+
+l1vars <- c("AA_pop", "AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CD_pop",
             "CN_pop_ln", "CN_pop_ln_d1", "CS_pop_ln",
-            "EX_pop_ln", "KD_pop", "RS", "YD_pop_ln")
+            "EX_pop", "EX_pop_ln", "KD_pop", "RS", "YD_pop", "YD_pop_ln")
+
 l2vars <- c("AA_pop_ln", "CS_pop_ln")
 
 # Notes:
 #   a = DELD * KD_pop_l1 - CD_pop_l1
-#   RM_x_CDA
+#   RM_x_CDA = RM * CDA
+#   RM_x_CDA_l1
 
 # TODO:
 #   create CDA, then RM_x_CDA
 
 tmp <- count(fmdata, vname)
+
+# Ray Fair's peak dates needed to calculate CDA:
+# note that dates begin before the sample start so calculate CDA before filtering
+peaksq <- c("1953q1", "1955q3", "1960q2", "1963q2", "1965q4", "1968q3", "1973q2", "1978q4", "1985q1", "1988q4", "1994q1", "1995q4", "2000q3", "2007q2", "2012q1", "2013q4")
+peaksd <- lubridate::yq(peaksq)
 
 data1 <- fmdata |> 
   filter(vname %in% vars) |>  
@@ -128,7 +139,13 @@ data1 <- fmdata |>
          across(all_of(l2vars),
                        \(x) lag(x, 2),
                        .names = "{.col}_l2")) |> 
-  mutate(a = DELD * KD_pop_l1 - CD_pop_l1)
+  mutate(a = DELD * KD_pop_l1 - CD_pop_l1,
+         CDpeak = (date %in% peaksd),
+         CDA = ifelse(CDpeak, CD_pop, NA_real_),
+         CDA = stats::approx(date, CDA, xout = date, method = "linear", rule = 1)$y,
+         RM_x_CDA = RM * CDA,
+         RM_x_CDA_l1 = lag(RM_x_CDA)) |> 
+  select(-CDpeak)
 data1
 ns(data1)
 

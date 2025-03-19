@@ -8,6 +8,8 @@ editor_options:
 
 There are three consumption equations, three investment equations, a demand for imports equation, a price equation, the Fed’s interest rate rule, and a term structure equation explaining the mortgage rate. The equations are estimated by two-stage least squares (2SLS) with account taken, when necessary, of serial correlation of the residuals. The estimation period is 1954:1–2014:4 except for the Fed rule, where the period ends in 2008:3. (p.3)
 
+Much of the text below is drawn from Fair 2015a, not always with quotes.
+
 ## Data notes
 
 FMFP.ZIP has:
@@ -45,6 +47,55 @@ From MM:
 > A common assumption in the time varying literature is that coefficients follow random walks—see, for example, Stock and Watson (1998). This assumption is problematic in macro work since it does not seem likely that macroeconomic relationships change via randomwalk coefficients or similar assumptions. It seems more likely that they change in slower, perhaps trend like, ways. Also, it seems unlikely that changes take place over the entire sample period. If there is a change, it may begin after the beginning of the sample period and end before the end of the sample period. The assumption used here postulates no change for a while, then smooth trend change for a while, and then no change after that. The assumption can be applied to any number of coefficients in an equation, although it is probably not practical with macro data to deal with more than one or two coefficients per equation.
 
 IOW: constant term is same up to 1969:4 (T1), then changes linearly up to some 1988:4 (T2) and unchanged through T
+
+## Constructing CDA
+
+CDA is a scale variable that is exogenous in the model. It is constructed from a peak-to-peak interpolation of CD_pop (i.e., CD / POP). (2015a p.20) Used only in equation 3.
+
+![](images/clipboard-3112057425.png)
+
+{{< include _setup.qmd >}}
+
+```{r}
+#| label: check-CDA
+#| output: true
+
+library(tidyverse)
+library(lubridate)
+library(pracma)
+
+# Fair's peak dates
+# note that Fair's data begins before the sample start so calculate CDA before filtering to the sample period
+peaksq <- c("1953q1", "1955q3", "1960q2", "1963q2", "1965q4", "1968q3", "1973q2", "1978q4", "1985q1", "1988q4", "1994q1", "1995q4", "2000q3", "2007q2", "2012q1", "2013q4") # 16
+peaksd <- lubridate::yq(peaksq)
+
+# get current version of data
+fmall <- readRDS(fs::path(DDATA, "fmall.rds"))
+df <- fmall |> 
+  select(date, CD_pop) |> 
+  mutate(row=row_number())
+
+peaks <- pracma::findpeaks(df$CD_pop)
+ht(peaks)
+# height, then indexes of max, begin, and end
+# [,1] [,2] [,3] [,4]
+# [1,] 0.1601615    7    1   11 1955-07-01 yes
+# [2,] 0.1517271   13   11   18 1957-01-01
+# [3,] 0.1528516   23   18   24 1959-07-01
+
+df |> 
+  ggplot(aes(date, CD_pop)) +
+  geom_line(colour="blue", linewidth=1) +
+  geom_vline(xintercept = peaksd) +
+  scale_x_date(name=NULL, date_breaks = "5 years", date_labels = "%Y-%b") +
+  theme_bw() +
+  x90 +
+  ggtitle("Ray Fair's peak time points for CD/POP with current (revised) CD/POP data")
+
+
+```
+
+Based on the plot, the peaks Fair uses don't seem quite appropriate for current (revised) data – some are off – but for now I use them.
 
 ## Instrumental variables
 

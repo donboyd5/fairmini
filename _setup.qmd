@@ -11,7 +11,10 @@ libs <- function(){
   library(tidyverse)
   library(zoo)
   library(AER) 
+  library(lmtest)
   library(systemfit)
+  library(lubridate)
+  library(pracma)
   
   library(here)
   library(fs)
@@ -34,6 +37,14 @@ source(fs::path(DR, "functions.R"))
 
 ```{r}
 # constants
+
+# plot items: freestanding ----------------------------------------------------
+legend_none <- theme(legend.position = "None")
+legend_notitle <- theme(legend.title = element_blank())
+caption_left <- theme(plot.caption = element_text(hjust = 0))
+x90 <- theme(axis.text.x = element_text(angle = -90, vjust = 0, hjust=0.5))
+
+# model items ----
 
 smpl <- list(start="1954-01-01", end="2014-10-01")
 

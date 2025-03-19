@@ -14,4 +14,6 @@ plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "T
 # ACF of residuals
 acf(residuals(results$fit), main = "ACF of Residuals")
 
+lmtest::dwtest(residuals ~ 1, data = list(residuals = residuals(results$fit)))
+
 ```

@@ -16,7 +16,7 @@ Estimated as change in real per-capita consumer expenditures on durable goods
 
 ### LHS
 
-CD_pop - CD_pop_l1
+CD_pop_d1: i.e., CD_pop - CD_pop_l1
 
 ### Formula
 
@@ -25,10 +25,6 @@ CD_pop - CD_pop_l1
 ### Instruments
 
 ![](images/clipboard-2929396034.png)
-
-C2, C, AG1, AG2, AG3, (KD=POP)􀀀1, DELD(KD=POP)􀀀1 􀀀 (CD=POP)􀀀1, (Y D=POP)􀀀1, (RM  CDA)􀀀1, (AA=POP)􀀀1, (EX=POP)􀀀1
-
-C2, C, AG1, AG2, AG3, KD_pop_l1, DELD_x\_(KD_pop)*l1 - CD\_*pop_l1, YD_popl1, RM_x_CDA_l1, AA_pop_l1, EX_pop_l1
 
 Lags test adds...
 
@@ -39,7 +35,7 @@ Lags test adds...
 
 formula <- CD_pop_d1 ~ -1 + C2 + C + AG1 + AG2 + AG3 + a + KD_pop_l1 + YD_pop + RM_x_CDA + AA_pop_l1
 
-# instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + CS_pop_ln_l1 + YD_pop_ln_l1 + RS_l1 + AA_pop_ln_l1 + C2_l1 + AG1_l1 + AG2_l1 + AG3_l1 + CS_pop_ln_l2 + AA_pop_ln_l2 + EX_pop_ln_l1
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + KD_pop_l1 + a + YD_pop_l1 + RM_x_CDA_l1 + AA_pop_l1 + EX_pop_l1
 
 # iv_formula_combine(formula, instruments)
 vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
@@ -47,6 +43,10 @@ data <- fmall |>
   select(date, all_of(vars))
 
 ```
+
+## Fair's comments on the equation
+
+![](images/clipboard-2630736315.png)
 
 ## Fair's results for the equation
 
@@ -59,14 +59,20 @@ data <- fmall |>
 #| output: true
 
 # Apply AR(1) correction with damping
-results <- ar1_correction(
-  data = data,
-  formula = formula,
-  instruments = instruments,
-  max_iter = 1000,
-  tol = 1e-5,
-  damp_factor = 0.5  # Adjust damping factor as needed
-)
+# results <- ar1_correction(
+#   data = data,
+#   formula = formula,
+#   instruments = instruments,
+#   max_iter = 1000,
+#   tol = 1e-5,
+#   damp_factor = 0.5  # Adjust damping factor as needed
+# )
+
+# Fair chose not to do AR1 correction because coefficients did not make sense
+results <- ivreg(formula, instruments, data=data)
+summary(results)
+
+results <- list(fit=results)
 
 # View results
 summary(results$fit)  # Final 2SLS model
@@ -74,6 +80,10 @@ summary(results$fit)  # Final 2SLS model
 ```
 
 {{< include _diagnostics.qmd >}}
+
+## My comments
+
+Come back to this.
 
 ```{r stop_here, echo=FALSE}
 knitr::knit_exit()
