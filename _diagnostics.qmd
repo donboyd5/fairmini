@@ -31,6 +31,4 @@ plot(residuals(results$fit), type = "l", main = "Residuals Over Time", xlab = "T
 # ACF of residuals
 acf(residuals(results$fit), main = "ACF of Residuals")
 
-
-
 ```

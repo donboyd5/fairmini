@@ -6,7 +6,7 @@ editor_options:
 
 # Equation 3 – Consumer expenditures on durable goods
 
-Estimated as change in real per-capita consumer expenditures on durable goods
+LHS is change in real per-capita consumer expenditures on durable goods
 
 {{< include _setup.qmd >}}
 
@@ -40,6 +40,7 @@ instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + KD_pop_l1 + a + YD_pop_l1 + RM_
 # iv_formula_combine(formula, instruments)
 vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
 data <- fmall |> 
+  mutate(a = DELD * KD_pop_l1 - CD_pop_l1) |> 
   select(date, all_of(vars))
 
 ```

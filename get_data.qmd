@@ -80,9 +80,8 @@ Example:
 # create all lhs and rhs variables
 # C2, C, AG1, AG2, AG3, a, KD_pop_l1, YD_pop, RM_x_CDA, AA_pop_l1
 
-vars <- c("AA", "AG1", "AG2", "AG3", "CD", "CN", "CS",
-          "DELD", "EX", 
-          "KD", "POP", "RM", "RS", "YD") 
+vars <- c("AA", "AA1", "AA2", "AG1", "AG2", "AG3", "CD", "CN", "CS",
+          "DELD", "EX", "IHH", "KD", "POP", "RM", "RS", "YD") 
 
 popvars <- c("AA", "CD", "CN", "CS", "EX", "KD", "YD")
 
@@ -97,7 +96,7 @@ l1vars <- c("AA_pop", "AA_pop_ln", "AG1", "AG2", "AG3", "C2", "CD_pop",
 l2vars <- c("AA_pop_ln", "CS_pop_ln")
 
 # Notes:
-#   a = DELD * KD_pop_l1 - CD_pop_l1
+#   eq 3.3 a = DELD * KD_pop_l1 - CD_pop_l1
 #   RM_x_CDA = RM * CDA
 #   RM_x_CDA_l1
 
@@ -139,8 +138,7 @@ data1 <- fmdata |>
          across(all_of(l2vars),
                        \(x) lag(x, 2),
                        .names = "{.col}_l2")) |> 
-  mutate(a = DELD * KD_pop_l1 - CD_pop_l1,
-         CDpeak = (date %in% peaksd),
+  mutate(CDpeak = (date %in% peaksd),
          CDA = ifelse(CDpeak, CD_pop, NA_real_),
          CDA = stats::approx(date, CDA, xout = date, method = "linear", rule = 1)$y,
          RM_x_CDA = RM * CDA,

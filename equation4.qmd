@@ -1,0 +1,104 @@
+---
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Equation 4 – Housing investment
+
+LHS is change in real per-capita investment in housing
+
+Similar to durable goods expenditure partial adjustment model (#3).
+
+-   KH is the stock of housing
+-   DELH is deprecation rate of the stock
+-   includes a measure of housing wealth, not total wealth
+-   does not include the age variables because Fair found them to be insignificant
+-   mortgage interest rate is multiplied by an exogenous scale variable IHA, constructed from peak-to-peak interpolation of IH per capita
+
+Assumes second order autogressive process for the error term.
+
+{{< include _setup.qmd >}}
+
+{{< include _load_data.qmd >}}
+
+## Variables in the model
+
+### LHS
+
+IHH_pop_d1: i.e., IHH_pop - IHH_pop_l1
+
+### Formula
+
+ C2, C, a, KH_pop_l1, YD_pop, RM_l1_x_IHHA, AA_pop_l1, RHO1, RHO2
+
+A2 = PHOUSE \* KH \[Real housing wealth\]
+
+### Instruments
+
+![](images/clipboard-899472943.png)
+
+C2, C, KH_pop_l1, YD_pop_l1, RM_l1_x_IHA,
+
+```{r}
+#| label: variables
+
+# ns(fmall)
+
+formula <- CD_pop_d1 ~ -1 + C2 + C + AG1 + AG2 + AG3 + a + KD_pop_l1 + YD_pop + RM_x_CDA + AA_pop_l1
+
+instruments <- ~ -1 + C2 + C + AG1 + AG2 + AG3 + KD_pop_l1 + a + YD_pop_l1 + RM_x_CDA_l1 + AA_pop_l1 + EX_pop_l1
+
+# iv_formula_combine(formula, instruments)
+vars <- all.vars(iv_formula_combine(formula, instruments)) |> sort()
+
+data <- fmall |> 
+  # mutate(a = DELD * KD_pop_l1 - CD_pop_l1) |> 
+  select(date, all_of(vars))
+
+```
+
+## Fair's comments on the equation
+
+![](images/clipboard-3725155125.png)
+
+## Fair's results for the equation
+
+![](images/clipboard-1161004150.png)
+
+## Estimation and results
+
+```{r}
+#| label: eq-estimation
+#| output: true
+
+# Apply AR(1) correction with damping
+# results <- ar1_correction(
+#   data = data,
+#   formula = formula,
+#   instruments = instruments,
+#   max_iter = 1000,
+#   tol = 1e-5,
+#   damp_factor = 0.5  # Adjust damping factor as needed
+# )
+
+# Fair chose not to do AR1 correction because coefficients did not make sense
+results <- ivreg(formula, instruments, data=data)
+summary(results)
+
+results <- list(fit=results)
+
+# View results
+summary(results$fit)  # Final 2SLS model
+
+```
+
+{{< include _diagnostics.qmd >}}
+
+## My comments
+
+Come back to this.
+
+```{r stop_here, echo=FALSE}
+knitr::knit_exit()
+```

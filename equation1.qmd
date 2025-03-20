@@ -6,7 +6,11 @@ editor_options:
 
 # Equation 1 – Consumer expenditures on services
 
-Estimated as log of real per-capita consumer expenditures on services
+LHS is log of real per-capita consumer expenditures on services.
+
+RHS has measures of per-capita income, per-capita assets, short-term interest rate, age distribution, and lagged DV.
+
+Estimated assuming first-order autocorrelation.
 
 {{< include _setup.qmd >}}
 

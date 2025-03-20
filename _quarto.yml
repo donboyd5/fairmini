@@ -19,6 +19,7 @@ book:
     - equation1.qmd
     - equation2.qmd
     - equation3.qmd
+    # - equation4.qmd
 
 format:
   html:

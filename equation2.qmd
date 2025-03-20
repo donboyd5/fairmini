@@ -6,7 +6,11 @@ editor_options:
 
 # Equation 2 – Consumer expenditures on nondurables
 
-Estimated as log of real per-capita consumer expenditures on nondurables
+LHS is log of real per-capita consumer expenditures on nondurables
+
+RHS has measures of per-capita income, per-capita assets, short-term interest rate, age distribution, lagged DV and lagged change in DV.
+
+Assumes NO first-order autocorrelation.
 
 {{< include _setup.qmd >}}
 
@@ -23,10 +27,6 @@ Instruments:
 ![](images/clipboard-2018364629.png)
 
 C2, C, AG1, AG2, AG3, CN_pop_ln_l1, CN_pop_ln_d1_l1, AA_pop_ln_l1, YD_pop_ln_l1, RS_l1, EX_pop_ln_l1
-
-Lags test adds ln_cn_pop_l3, ln_yd_pop_l1, and RS_l1.
-
-NO rho
 
 ```{r}
 
